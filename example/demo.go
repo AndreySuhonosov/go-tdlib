@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -75,6 +76,39 @@ func main() {
 
 	ch := make(chan os.Signal, 2)
 	signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		for {
+			history, err := tdlibClient.GetChatHistory(&client.GetChatHistoryRequest{
+				ChatId:        79105265073,
+				FromMessageId: 0,
+				Offset:        0,
+				Limit:         2,
+				OnlyLocal:     false,
+			})
+			if err != nil {
+				fmt.Println("error tdlibClient.GetChatHistory:", err)
+				chats, err := tdlibClient.GetChats(&client.GetChatsRequest{
+					ChatList: nil,
+					Limit:    10,
+				})
+
+				if err != nil {
+					fmt.Println("error tdlibClient.GetChats:", err)
+				}
+
+				for _, v := range chats.ChatIds {
+					fmt.Println("chats id:", v)
+				}
+				break
+			}
+			for _, v := range history.Messages {
+				fmt.Println("v.Content", v.Content)
+				fmt.Println("v.Extra", v.Extra)
+			}
+		}
+	}()
+
 	go func() {
 		<-ch
 		tdlibClient.Stop()
